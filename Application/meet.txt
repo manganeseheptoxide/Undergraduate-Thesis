@@ -1,0 +1,24 @@
+Nov 19
+
+To address:
+> Look into how covid cases affect the demand
+> Look into individual Project Types
+> Capillary, Capseq, and PCR-Seq --> same
+> DNA purification and DNA Extraction --> Same
+> Extract2Seq: Blood DNA Extraction --> Cleanup/AGE --> Capseq
+> PCR+Capillary+Cleanup: Cleanup/AGE --> Capseq
+> Try analysis on individual Project Types
+ 
+Exogenous Variables:
+> Client type: students, researchers, etc.
+> Source of the samples
+> Research papers using keywords
+ 
+To Do:
+> Request if they could join 
+
+Dec 3
+
+To address:
+> Extract2Seq = CapSeq + DNA Extraction
+> Create another time series data for including Extract2Seq in CapSeq & DNA Extraction
