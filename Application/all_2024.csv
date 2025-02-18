@@ -11,8 +11,7 @@ Project ID,Project Type,# of samples,Sample type,Date Received,Date Completed
 24-011,Extract2seq,42,Tissue,2024-02-07,2024-02-20
 24-033,Extract2seq,9,bacteria,2024-02-07,2024-02-29
 24-034,Extraction,6,,2024-02-08,2024-02-12
-24-012,Extract2seq,3,"nematode
-plant",2024-02-14,2024-02-23
+24-012,Extract2seq,3,"nematode plant",2024-02-14,2024-02-23
 24-014,Extract2seq,4,bacteria,2024-02-14,2024-02-29
 24-015,Capillary+Cleanup,4,unpurified PCR,2024-02-15,2024-02-20
 24-016,PCR2seq,8,DNA,2024-02-16,2024-02-20
@@ -25,8 +24,7 @@ plant",2024-02-14,2024-02-23
 24-023,Capillary+Cleanup,1,unpurified PCR,2024-02-29,2024-03-08
 24-024,Extract2seq,26,bacteria,2024-03-01,2024-03-08
 24-025,Extract2seq,9,bacteria,2024-03-04,2024-03-08
-24-026,Extract2seq,5,"bacteria
-fungi",2024-03-05,2024-03-15
+24-026,Extract2seq,5,"bacteria fungi",2024-03-05,2024-03-15
 24-027,Extract2seq,2,bacteria,2024-03-06,2024-03-15
 24-028,Extract2seq,4,fungi,2024-03-07,2024-03-15
 24-029,Extract2seq,2,bacteria,2024-03-08,2024-03-15
@@ -46,8 +44,7 @@ fungi",2024-03-05,2024-03-15
 24-049,Extract2seq,5,bacteria,2024-03-21,2024-04-03
 24-050,Capseq,11,purified PCR,2024-03-25,2024-04-03
 24-051,Capseq,18,purified PCR,2024-04-02,2024-04-11
-24-052,Extract2seq,3,"nematode
-plant",2024-04-03,2024-04-24
+24-052,Extract2seq,3,"nematode plant",2024-04-03,2024-04-24
 24-055,Extract2seq,3,bacteria,2023-02-10,-
 24-056,Extract2seq,3,fungi,2024-04-12,2024-05-02
 24-057,PCR2seq,3,DNA,2024-04-15,2024-04-17
