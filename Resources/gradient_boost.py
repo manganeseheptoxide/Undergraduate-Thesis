@@ -16,6 +16,7 @@ class GradientBoost:
         self.min_points = min_points
         self.init_tree = None
         self.init_guess = None
+        self.init_guess_mean = None
         self.last_guess = None
     
     def predict(self, X: pd.DataFrame, training: bool = False):
@@ -25,15 +26,16 @@ class GradientBoost:
             predictions += self.learning_rate * self.ensemble[-1].evaluate(X)
             self.last_guess = predictions
         else:
-            predictions = self.init_guess.copy()
+            predictions = self.init_tree.evaluate(X) if self.init_tree is not None else np.full(X.shape[0], self.init_guess_mean)
             for tree in self.ensemble[1:]:
                 predictions += self.learning_rate * tree.evaluate(X)
         # for tree in self.ensemble[1:]:
         #     predictions += self.learning_rate * tree.evaluate(X)
-        return predictions
+        return pd.Series(predictions, index=X.index)
 
     def fit(self, X: pd.DataFrame, y: pd.Series, init_tree: Tree = None, early_stopping: int = 5):
         self.init_tree = init_tree
+        self.init_guess_mean = y.mean()
         self.init_guess = pd.Series(init_tree.evaluate(X), index=y.index) if init_tree is not None else pd.Series(np.full(y.shape, y.mean()), index=y.index)
         self.last_guess = self.init_guess.copy()
         if init_tree is not None:
