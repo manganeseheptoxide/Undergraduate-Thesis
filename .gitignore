@@ -1,5 +1,6 @@
 Application/
 Resources/References/
+Dump/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
