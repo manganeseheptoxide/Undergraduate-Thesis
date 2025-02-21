@@ -22,9 +22,7 @@ class SSR(LossFunction):
         y_actual = np.array(actual)
         y_predicted = np.array(predicted)
         return 2*(y_actual - y_predicted)
-
-import numpy as np
-
+    
 class QuantileLoss(LossFunction):
     def __init__(self, tau=0.9):
         super().__init__()
