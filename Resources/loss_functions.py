@@ -3,13 +3,17 @@ import numpy as np
 class LossFunction:
     def __init__(self):
         self.loss = self.loss_calculation
-        self.pseudo_residual = self.pseudo_residual_calculation
+        self.gradient = self.gradient_calculation
+        self.hessian = self.hessian_calculation
 
     def loss_calculation(self, actual, predicted):
         raise NotImplementedError("Loss function not implemented!")
 
-    def pseudo_residual_calculation(self, actual, predicted):
-        raise NotImplementedError("Pseudo-residual calculation not implemented!")
+    def gradient_calculation(self, actual, predicted): # Derivative of loss function with respect to predicted values (Technically negative gradient)
+        raise NotImplementedError("Gradient calculation not implemented!")
+    
+    def hessian_calculation(self, actual, predicted):
+        raise NotImplementedError("Hessian calculation not implemented!")
     
 
 class SSR(LossFunction):
@@ -18,11 +22,18 @@ class SSR(LossFunction):
         y_predicted = np.array(predicted)
         return np.sum((y_actual - y_predicted) ** 2)
 
-    def pseudo_residual_calculation(self, actual, predicted):
+    def gradient_calculation(self, actual, predicted):
         y_actual = np.array(actual)
         y_predicted = np.array(predicted)
-        return 2*(y_actual - y_predicted)
+        # Correct derivative with respect to y_predicted:
+        return -2 * (y_actual - y_predicted)
     
+    def hessian_calculation(self, actual, predicted):
+        y_actual = np.array(actual)
+        # Second derivative is constant (2)
+        return np.full_like(y_actual, 2.0)
+
+
 class QuantileLoss(LossFunction):
     def __init__(self, tau=0.9):
         super().__init__()
@@ -34,21 +45,18 @@ class QuantileLoss(LossFunction):
         residual = y_actual - y_predicted
         return np.sum(np.maximum(self.tau * residual, (self.tau - 1) * residual))
 
-    def pseudo_residual_calculation(self, actual, predicted):
+    def gradient_calculation(self, actual, predicted):
         y_actual = np.array(actual)
         y_predicted = np.array(predicted)
-        return np.where(y_actual > y_predicted, self.tau, self.tau - 1)
+        # For quantile loss: if y_actual > y_predicted, derivative with respect to y_predicted is -tau,
+        # else it's -(tau-1)
+        return -np.where(y_actual > y_predicted, self.tau, self.tau - 1)
+    
+    def hessian_calculation(self, actual, predicted):
+        y_actual = np.array(actual)
+        # Piecewise linear loss => second derivative is 0 almost everywhere.
+        return np.zeros_like(y_actual)
 
-class LogCoshLoss(LossFunction):
-    def loss_calculation(self, actual, predicted):
-        y_actual = np.array(actual)
-        y_predicted = np.array(predicted)
-        return np.sum(np.log(np.cosh(y_actual - y_predicted)))
-
-    def pseudo_residual_calculation(self, actual, predicted):
-        y_actual = np.array(actual)
-        y_predicted = np.array(predicted)
-        return np.tanh(y_actual - y_predicted)
 
 class HuberLoss(LossFunction):
     def __init__(self, delta=1.0):
@@ -62,11 +70,20 @@ class HuberLoss(LossFunction):
         mask = np.abs(residual) <= self.delta
         return np.sum(np.where(mask, 0.5 * residual**2, self.delta * (np.abs(residual) - 0.5 * self.delta)))
 
-    def pseudo_residual_calculation(self, actual, predicted):
+    def gradient_calculation(self, actual, predicted):
         y_actual = np.array(actual)
         y_predicted = np.array(predicted)
         residual = y_actual - y_predicted
-        return np.where(np.abs(residual) <= self.delta, residual, self.delta * np.sign(residual))
+        # In the quadratic region: derivative = -residual; in the linear region: derivative = -delta*sign(residual)
+        return -np.where(np.abs(residual) <= self.delta, residual, self.delta * np.sign(residual))
+    
+    def hessian_calculation(self, actual, predicted):
+        y_actual = np.array(actual)
+        y_predicted = np.array(predicted)
+        residual = y_actual - y_predicted
+        # Second derivative is 1 in quadratic region, 0 otherwise.
+        return np.where(np.abs(residual) <= self.delta, 1.0, 0.0)
+
 
 class AsymmetricHuberLoss(LossFunction):
     def __init__(self, delta=1.0, alpha=3.0):  # alpha > 1 penalizes underestimation more
@@ -85,30 +102,24 @@ class AsymmetricHuberLoss(LossFunction):
                               self.delta * (np.abs(residual) - 0.5 * self.delta)))
         )
 
-    def pseudo_residual_calculation(self, actual, predicted):
+    def gradient_calculation(self, actual, predicted):
         y_actual = np.array(actual)
         y_predicted = np.array(predicted)
         residual = y_actual - y_predicted
-        return np.where(np.abs(residual) <= self.delta, residual, 
-                        np.where(residual > 0, self.alpha * self.delta * np.sign(residual),
-                                 self.delta * np.sign(residual)))
-
-class UpperBoundLogCoshLoss(LossFunction):
-    def __init__(self, scale_factor=1.5):  # Scale up negative residuals
-        super().__init__()
-        self.scale_factor = scale_factor
-
-    def loss_calculation(self, actual, predicted):
+        # In the quadratic region: derivative = -residual.
+        # In the linear region, if residual > 0: derivative = -alpha * delta,
+        # else: derivative = delta (since sign(residual) is -1 and -delta*(-1)=delta)
+        return -np.where(np.abs(residual) <= self.delta, residual, 
+                         np.where(residual > 0, self.alpha * self.delta * np.sign(residual),
+                                  self.delta * np.sign(residual)))
+    
+    def hessian_calculation(self, actual, predicted):
         y_actual = np.array(actual)
         y_predicted = np.array(predicted)
         residual = y_actual - y_predicted
-        return np.sum(np.log(np.cosh(residual)))
+        # Hessian is 1 in the quadratic region and 0 in the linear region.
+        return np.where(np.abs(residual) <= self.delta, 1.0, 0.0)
 
-    def pseudo_residual_calculation(self, actual, predicted):
-        y_actual = np.array(actual)
-        y_predicted = np.array(predicted)
-        residual = y_actual - y_predicted
-        return np.where(residual < 0, self.scale_factor * np.tanh(residual), np.tanh(residual))
 
 class SmoothQuantileLoss(LossFunction):
     def __init__(self, tau=0.9, epsilon=1e-3):  # Smooth pinball loss
@@ -124,9 +135,18 @@ class SmoothQuantileLoss(LossFunction):
                                0.5 * residual**2 / self.epsilon, 
                                np.maximum(self.tau * residual, (self.tau - 1) * residual)))
 
-    def pseudo_residual_calculation(self, actual, predicted):
+    def gradient_calculation(self, actual, predicted):
         y_actual = np.array(actual)
         y_predicted = np.array(predicted)
         residual = y_actual - y_predicted
-        return np.where(np.abs(residual) < self.epsilon, residual / self.epsilon, 
-                        np.where(residual > 0, self.tau, self.tau - 1))
+        # In the smooth region: derivative = -residual/epsilon.
+        # Else, if residual > 0: derivative = -tau; if residual <= 0: derivative = -(tau-1)
+        return np.where(np.abs(residual) < self.epsilon, -residual / self.epsilon, 
+                        np.where(residual > 0, -self.tau, -(self.tau - 1)))
+    
+    def hessian_calculation(self, actual, predicted):
+        y_actual = np.array(actual)
+        y_predicted = np.array(predicted)
+        residual = y_actual - y_predicted
+        # In the smooth region: second derivative is 1/epsilon; otherwise 0.
+        return np.where(np.abs(residual) < self.epsilon, 1.0 / self.epsilon, 0.0)

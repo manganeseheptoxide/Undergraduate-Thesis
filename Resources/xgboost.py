@@ -2,12 +2,14 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 from loss_functions import *
-from regression_tree import *
+from xgb_tree import *
 
-class GradientBoost:
-    def __init__(self, loss_function: LossFunction, n_estimators: int = 100,
+class XGBoost:
+    def __init__(self, loss_function: LossFunction = SSR, regularization_param: float = 0.0,
+                 n_estimators: int = 100,
                  learning_rate: float = 0.01, max_depth: int = 1, min_points: int = 20):
         self.loss_function = loss_function
+        self.regularization_param = regularization_param
         self.ensemble = []
         self.loss = []
         self.n_estimators = n_estimators
@@ -33,24 +35,23 @@ class GradientBoost:
         #     predictions += self.learning_rate * tree.evaluate(X)
         return pd.Series(predictions, index=X.index)
 
-    def fit(self, X: pd.DataFrame, y: pd.Series, init_tree: Tree = None, early_stopping: int = 5):
+    def fit(self, X: pd.DataFrame, y: pd.Series, init_tree: XGB_Tree = None, early_stopping: int = 5):
         self.init_tree = init_tree
         self.init_guess_mean = y.mean()
         self.init_guess = pd.Series(init_tree.evaluate(X), index=y.index) if init_tree is not None else pd.Series(np.full(y.shape, y.mean()), index=y.index)
         self.last_guess = self.init_guess.copy()
         if init_tree is not None:
             self.ensemble.append(init_tree)
-        pseudo_residuals = pd.Series(self.loss_function.gradient(y, self.init_guess), index=y.index)
         loss = self.loss_function.loss(y, self.init_guess)
         print(f"Iteration: 0, Loss: {loss:.4f}")
         loss_increase = 0
         self.loss.append(loss)
         for i in range(self.n_estimators):
-            tree = Tree(X=X, y=pseudo_residuals)
+            tree = XGB_Tree(X=X, y=y, fcn_estimate=self.predict, loss_fcn=self.loss_function,
+                            regularization_param = self.regularization_param)
             tree.generate_tree(max_depth=self.max_depth, min_points=self.min_points)
             self.ensemble.append(tree)
             predictions = self.predict(X, training=True)
-            pseudo_residuals = pd.Series(self.loss_function.gradient(y, predictions), index=y.index)
             loss = self.loss_function.loss(y, predictions)
             if loss >= self.loss[-1]:
                 loss_increase += 1
